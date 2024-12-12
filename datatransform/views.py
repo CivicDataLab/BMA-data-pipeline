@@ -2,6 +2,9 @@ import pika
 import requests
 from background_task.models import CompletedTask
 from pipeline.model_to_pipeline import task_executor
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+import requests
 import log_utils
 from .models import Task, Pipeline
 # Create your views here.
@@ -11,140 +14,53 @@ import pandas as pd
 import json
 import uuid
 
-
-def transformer_list(request):
-    transformers = [
-        {"name": "skip_column", "context": [
-            {"name": "columns", "type": "field_multi", "desc": "Please select column names to be deleted"}]},
-        {"name": "merge_columns", "context": [
-            {"name": "column1", "type": "field_single", "desc": "Please select first column name"},
-            {"name": "column2", "type": "field_single", "desc": "Please select second column name"},
-            {"name": "output_column", "type": "string", "desc": "Please enter output column name"},
-            {"name": "separator", "type": "string", "desc": "Please enter separator char/string"}
-        ]},
-        {"name": "change_format", "context": [
-            {"name": "format", "type": "string", "desc": "xml/json/pdf"}]},
-        {"name": "anonymize", "context": [
-            {"name": "to_replace", "type": "string", "desc": "String to be replaced"},
-            {"name": "replace_val", "type": "string", "desc": "Replacement string"},
-            {"name": "column", "type": "field_single", "desc": "Please select column name to perform operation"}
-        ]},
-        {"name": "aggregate", "context": [
-            {"name": "index", "type": "string", "desc": "Field that is needed as index"},
-            {"name": "columns", "type": "field_multi", "desc": "Select column names"},
-            {"name": "values", "type": "string", "desc": "values"}
-        ]}
-    ]
-
-    context = {"result": transformers, "Success": True}
-    return JsonResponse(context, safe=False)
+GEOJSON_URLS = {
+    "risk_points": "http://flood.bangkok.go.th:8443/geoserver/open_lift/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=open_lift%3Arisk_point&maxFeatures=50&outputFormat=application%2Fjson",
+    "main_canal": "http://flood.bangkok.go.th:8443/geoserver/open_lift/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=open_lift%3Amain_canal&maxFeatures=50&outputFormat=application%2Fjson",
+    "districts_boundary": "http://flood.bangkok.go.th:8443/geoserver/Bangkok_TH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=Bangkok_TH%3AADMIN_DISTRICT_BND&maxFeatures=50&outputFormat=application%2Fjson"
+}
 
 
-def pipeline_filter(request):
-    dataset_id = request.GET.get('datasetId', None)
-    pipeline_data = list(Pipeline.objects.filter(dataset_id=dataset_id))
-    resp_list = []
-    for each in pipeline_data:
-        p_id = each.pipeline_id
-        task_data = list(Task.objects.filter(Pipeline_id=p_id))
-        tasks_list = []
-        for task in task_data:
-            t_data = {
-                'task_id': task.task_id, 'task_name': task.task_name, 'context': task.context,
-                'status': task.status, 'order_no': task.order_no, 'created_at': task.created_at,
-                'result_url': task.result_url, 'output_id': task.output_id
-            }
-            tasks_list.append(t_data)
-        data = {'pipeline_id': each.pipeline_id, 'pipeline_name': each.pipeline_name,
-                'output_id': each.output_id, 'created_at': each.created_at,
-                'status': each.status, 'resource_id': each.resource_id, 'tasks': tasks_list
-                }
-        resp_list.append(data)
-
-    context = {"result": resp_list, "Success": True}
-
-    return JsonResponse(context, safe=False)
+def fetch_data(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        return {"error": str(e)}
 
 
-def pipe_list(request):
-    task_data = list(Task.objects.all().values())
-
-    data = {}
-    for each in task_data:
-        p = Pipeline.objects.get(pk=each['Pipeline_id_id'])
-        res_url = "https://ndp.ckan.civicdatalab.in/dataset/" + p.output_id + "/resource/" + each['output_id']
-
-        if each['Pipeline_id_id'] not in data:
-            data[each['Pipeline_id_id']] = {'date': each['created_at'], 'status': p.status, 'name': p.pipeline_name,
-                                            'pipeline': [{"name": each['task_name'], "step": each['order_no'],
-                                                          "status": each['status'], "result": res_url}]}
-        else:
-            data[each['Pipeline_id_id']]['pipeline'].append(
-                {"name": each['task_name'], "step": each['order_no'], "status": each['status'], "result": res_url})
-
-    context = {"result": data, "Success": True}
-
-    return JsonResponse(context, safe=False)
+@api_view(['GET'])
+def risk_points(request):
+    try:
+        print(GEOJSON_URLS["risk_points"])
+        risk_points_data = fetch_data(GEOJSON_URLS["risk_points"])
+        print(f"fetched data {risk_points_data}")
+        dict_data = json.dumps(risk_points_data)
+        print(f"dict_data {dict_data}")
+        data = json.loads(dict_data)
+        print(f"dump file data {data}")
+        return data
+    except Exception as e:
+        return {"error": str(e)}
 
 
-def pipe_create(request):
-    if request.method == 'POST':
-        post_data = json.loads(request.body.decode('utf-8'))
-        print("#####", post_data)
-        transformers_list = post_data.get('transformers_list', None)
-        data_url = post_data.get('data_url', None)
-        pipeline_name = post_data.get('pipeline_name', '')
-        project = post_data.get('project', '') # flag to direct to the exact prefect flow
-        p = Pipeline(status="Created", pipeline_name=pipeline_name)
+@api_view(['GET'])
+def main_canal(request):
+    try:
+        main_canal_data = fetch_data(GEOJSON_URLS["main_canal"])
+        data = json.loads(main_canal_data)
 
-        p.save()
-
-        p_id = p.pk
-        logger = log_utils.set_log_file(p_id, pipeline_name)
-        transformers_list = [i for i in transformers_list if i]
-        # try:
-        #     data = read_data(data_url)
-        # except Exception as e:
-        #     print(str(e), "&&&&&&&")
-        #     logger.error(f""" Got an error while reading data from URL - {str(e)}""")
-        #     data = None
+    except requests.RequestException as e:
+        return {"error": str(e)}
+    return data
 
 
-        for _, each in enumerate(transformers_list):
-            task_name = each.get('name', None)
-            task_order_no = each.get('order_no', None)
-            task_context = each.get('context', None)
-
-            p = Pipeline.objects.get(pk=p_id)
-            p.task_set.create(task_name=task_name, status="Created", order_no=task_order_no, context=task_context)
-        # temp_file_name = uuid.uuid4().hex
-
-        # if data is not None:
-        #     if not data.empty:
-        #         data.to_csv(temp_file_name)
-        message_body = {
-            'p_id': p_id,
-            'data_path': data_url,
-            'res_details': "",
-            'project': project
-        }
-        # task_executor(p_id, data_url, project)
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost'))
-        channel = connection.channel()
-
-        channel.queue_declare(queue='pipeline_ui_queue')
-        channel.basic_publish(exchange='',
-                              routing_key='pipeline_ui_queue',
-                              body=json.dumps(message_body))
-        print(f''' Sent {p_id}, {data_url}, {project} to task executor''' )
-        connection.close()
-        logger.info(f"""INFO: sent {message_body} to the worker demon""")
-        context = {"result": p_id, "Success": True}
-        return JsonResponse(context, safe=False)
-
-
-def read_data(data_url):
-    all_data = pd.read_csv(data_url)
-
-    return all_data
+@api_view(['GET'])
+def districts_boundary(request):
+    try:
+        districts_boundary_data = fetch_data(GEOJSON_URLS["districts_boundary"])
+        data = json.loads(districts_boundary_data)
+        return data
+    except requests.RequestException as e:
+        return {"error": str(e)}

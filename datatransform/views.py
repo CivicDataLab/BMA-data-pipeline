@@ -33,34 +33,33 @@ def fetch_data(url):
 @api_view(['GET'])
 def risk_points(request):
     try:
-        print(GEOJSON_URLS["risk_points"])
         risk_points_data = fetch_data(GEOJSON_URLS["risk_points"])
-        print(f"fetched data {risk_points_data}")
-        dict_data = json.dumps(risk_points_data)
-        print(f"dict_data {dict_data}")
-        data = json.loads(dict_data)
-        print(f"dump file data {data}")
-        return data
+        if "error" in risk_points_data:
+            return Response({"error": risk_points_data["error"]}, status=500)
+        return Response(risk_points_data)  # Return data wrapped in DRF's Response
     except Exception as e:
-        return {"error": str(e)}
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(['GET'])
 def main_canal(request):
     try:
         main_canal_data = fetch_data(GEOJSON_URLS["main_canal"])
-        data = json.loads(main_canal_data)
+        if "error" in main_canal_data:
+            return Response({"error": main_canal_data["error"]}, status=500)
+        return Response(main_canal_data)
 
     except requests.RequestException as e:
         return {"error": str(e)}
-    return data
+
 
 
 @api_view(['GET'])
 def districts_boundary(request):
     try:
         districts_boundary_data = fetch_data(GEOJSON_URLS["districts_boundary"])
-        data = json.loads(districts_boundary_data)
-        return data
+        if "error" in districts_boundary_data:
+            return Response({"error": districts_boundary_data["error"]}, status=500)
+        return Response(districts_boundary_data)
     except requests.RequestException as e:
         return {"error": str(e)}

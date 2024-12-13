@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: BMA GeoJSON API
+  version: 1.0.0
+  description: API for retrieving GeoJSON data for Bangkok Metropolitan Administration
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+paths:
+  /geojson/{layer_type}/:
+    get:
+      summary: Retrieve GeoJSON data
+      description: Fetches GeoJSON data for specified layer type from Bangkok's GeoServer
+      parameters:
+        - in: path
+          name: layer_type
+          required: true
+          schema:
+            type: string
+            enum: [risk_points, main_canal, districts_boundary]
+          description: Type of GeoJSON layer to retrieve
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    description: GeoJSON FeatureCollection
+                    properties:
+                      type:
+                        type: string
+                        example: FeatureCollection
+                      features:
+                        type: array
+                        items:
+                          type: object
+                  error:
+                    type: string
+                    nullable: true
+        "400":
+          description: Invalid layer type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Invalid layer type
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Request Error
+
+components:
+  schemas:
+    LayerType:
+      type: string
+      enum:
+        - risk_points
+        - main_canal
+        - districts_boundary
+      description: Available GeoJSON layer types

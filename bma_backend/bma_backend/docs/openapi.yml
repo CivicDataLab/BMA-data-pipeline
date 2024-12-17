@@ -19,7 +19,8 @@ paths:
           required: true
           schema:
             type: string
-            enum: [risk_points, main_canal, districts_boundary]
+            enum:
+              [risk_points, main_canal, districts_boundary, flood_complaints]
           description: Type of GeoJSON layer to retrieve
       responses:
         "200":

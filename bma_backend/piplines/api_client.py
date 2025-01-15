@@ -3,8 +3,8 @@ from typing import Dict, Optional, Union
 from urllib.parse import urlparse, parse_qs
 from django.conf import settings
 from dataclasses import dataclass
-
-
+from decouple import config
+from .constants import BUDGET_MIS_API
 @dataclass
 class APIResponse:
     success: True
@@ -14,9 +14,10 @@ class APIResponse:
 
 
 class BaseAPIClient:
-    def __init__(self, base_url: str, timeout: int = 3000):
+    def __init__(self, base_url: str, timeout: int = 3000, auth: tuple = None):
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
+        self.auth = auth
 
     def _make_request(self, endpoint: str, method: str = 'GET', params: Dict = None) -> APIResponse:
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
@@ -27,7 +28,8 @@ class BaseAPIClient:
                 method=method,
                 url=url,
                 params=params,
-                timeout=self.timeout
+                timeout=self.timeout,
+                auth=self.auth
             )
             response.raise_for_status()
             response.data = req_response.json()
@@ -77,3 +79,14 @@ class GeoServerClient:
             response.error = f"Request Error: {str(e)}"
             response.status_code = 500
             return response
+
+
+class BudgetMISClient(BaseAPIClient):
+    def __int__(self):
+        super().__init__(base_url=BUDGET_MIS_API)
+        self.auth = (config("BUDGET_API_USERNAME"), config("BUDGET_API_PASSWORD"))
+
+    def fetch_budget_data(self, endpoint: str, params: Dict = None) -> APIResponse:
+        return self._make_request(endpoint=endpoint, method='GET', params=params, auth=self.auth)
+
+

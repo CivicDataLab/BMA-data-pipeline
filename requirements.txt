@@ -11,6 +11,7 @@ aspose-cells==22.8.0
 async-timeout==4.0.2
 asyncpg==0.26.0
 attrs==22.1.0
+-e git+ssh://git@github.com/CivicDataLab/bma-be.git@5ed1acdfb24359fa1228eba5fac282c2243afdf2#egg=bma_backend&subdirectory=bma_backend
 cachetools==5.2.0
 certifi==2021.5.30
 cffi==1.15.1

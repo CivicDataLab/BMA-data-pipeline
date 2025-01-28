@@ -12,6 +12,7 @@ Fetches GeoJSON data from Bangkok's GeoServer.
   - `risk_points`: Risk point locations
   - `main_canal`: Main canal network
   - `districts_boundary`: District boundaries
+  - `flood_complaints`: Traffy fondue flood complaints
 
 #### Responses
 

@@ -21,10 +21,14 @@ api_patterns = [
     path('admin/', admin.site.urls),
     path('geojson/<str:layer_type>/',
          views.get_geojson_data, name='get_geojson_data'),
+    path('budget_mis/', views.get_budget_mis_data, name='get_budget_mis_data'),
 ]
 
 urlpatterns = [
 
     path('api/v1/', include(api_patterns)),
-
 ]
+
+
+
+

@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: BMA GeoJSON API
+  title: BMA GeoJSON and Budget MIS API
   version: 1.0.0
-  description: API for retrieving GeoJSON data for Bangkok Metropolitan Administration
+  description: API for retrieving GeoJSON data and budget information for Bangkok Metropolitan Administration
 
 servers:
   - url: http://localhost:8000/api/v1
@@ -74,6 +74,104 @@ paths:
                     type: string
                     example: Request Error
 
+  /budget_mis/:
+    get:
+      summary: Retrieve budget MIS data
+      description: Fetches budget information from Bangkok's MIS budget system
+      parameters:
+        - in: query
+          name: source_id
+          required: false
+          schema:
+            type: string
+            default: "01"
+          description: Funding source ID (default is '01' - Annual Budget)
+        - in: query
+          name: book_id
+          required: false
+          schema:
+            type: string
+            default: "0"
+          description: Budget document identifier (default is '0' - Annual Budget)
+        - in: query
+          name: fiscal_year
+          required: false
+          schema:
+            type: string
+            default: "66"
+          description: Fiscal year of the budget (default is '66')
+        - in: query
+          name: department_id
+          required: false
+          schema:
+            type: string
+            default: "11000000"
+          description: Department code (default is '11000000' - Bureau-level department)
+        - in: query
+          name: exp_object_id
+          required: false
+          schema:
+            type: string
+            default: "07"
+          description: Expenditure category (default is '07' - Other Expenditures)
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        DEPARTMENT_NAME:
+                          type: string
+                          example: Department Name
+                        PROGRAM_NAME:
+                          type: string
+                          example: Program Name
+                        FUNC_NAME:
+                          type: string
+                          example: Project Function
+                        EXPENDITURE_NAME:
+                          type: string
+                          example: Expenditure Description
+                        APPROVE_ON_HAND:
+                          type: number
+                          example: 5000000
+        "400":
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Invalid request parameters
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Request Error
+
 components:
   schemas:
     LayerType:
@@ -82,4 +180,5 @@ components:
         - risk_points
         - main_canal
         - districts_boundary
+        - flood_complaints
       description: Available GeoJSON layer types

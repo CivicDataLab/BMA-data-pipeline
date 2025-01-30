@@ -3,7 +3,7 @@ from typing import Dict, Optional, Union
 from urllib.parse import urlparse, parse_qs
 from django.conf import settings
 from dataclasses import dataclass
-
+from .constants import BUDGET_MIS_AUTH, BUDGET_MIS_URL
 
 @dataclass
 class APIResponse:
@@ -26,7 +26,7 @@ class BaseAPIClient:
             req_response = requests.request(
                 method=method,
                 url=url,
-                params=params,
+                params=params, 
                 timeout=self.timeout
             )
             response.raise_for_status()
@@ -47,6 +47,32 @@ class BaseAPIClient:
             response.status_code = 500
 
 
+class BudgetMISClient:
+    def __init__(self, base_url=BUDGET_MIS_URL):
+        self.base_url = base_url
+
+    def get_budget_data(self, params: dict):
+        try:
+            response = requests.get(
+                self.base_url,
+                params=params,
+                auth=(BUDGET_MIS_AUTH["username"], BUDGET_MIS_AUTH["password"]),
+                timeout=30
+            )
+            response.raise_for_status()
+            return {
+                "success": True,
+                "data": response.json(),
+                "status_code": response.status_code
+            }
+        except requests.exceptions.RequestException as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "status_code": 500
+            }
+        
+        
 class GeoServerClient:
     def __init__(self, timeout=3000):
         self.timeout = timeout

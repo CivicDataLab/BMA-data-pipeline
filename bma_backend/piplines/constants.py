@@ -5,3 +5,10 @@ GEOJSON_URLS = {
     "flood_complaints": "https://publicapi.traffy.in.th/teamchadchart-stat-api/geojson/v1?output_format=json&name=Prajna&org=Civicdatalab&purpose=Visualisation&email=prajna@civicdatalab.in&limit=1000"
 
 }
+
+BUDGET_MIS_URL = "https://connect.bangkok.go.th/misbudget/bmabudget"
+
+BUDGET_MIS_AUTH = {
+    "username": "ocp-cdl",
+    "password": "S345#Miv-976X"
+}

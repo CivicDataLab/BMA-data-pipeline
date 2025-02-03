@@ -113,10 +113,4 @@ Fetches budget information from Bangkok's MIS budget system.
 
 ---
 
-## **Authentication**
-The Budget MIS API requires **basic authentication**:
 
-- **Username**: `ocp-cdl`  
-- **Password**: `S345#Miv-976X`  
-
----
